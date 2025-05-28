@@ -257,7 +257,9 @@ class _PoseDetectorViewState extends State<PoseDetectorView> {
                         final value = parts[1];
                         Color valueColor = Colors.white;
                         
-                        if (value.contains('normal') || value == 'Berdiri') {
+                        if (value.contains('normal') || 
+                            value == 'Berdiri' || 
+                            value == 'Kedua siku lurus') {
                           valueColor = Colors.green;
                         } else {
                           valueColor = Colors.orange;

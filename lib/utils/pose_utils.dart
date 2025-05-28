@@ -12,6 +12,15 @@ class PoseUtils {
     PoseLandmarkType.rightShoulder
   ];
   
+  static const List<PoseLandmarkType> elbowKeypoints = [
+    PoseLandmarkType.leftWrist,
+    PoseLandmarkType.rightWrist,
+    PoseLandmarkType.leftElbow,
+    PoseLandmarkType.rightElbow,
+    PoseLandmarkType.leftShoulder,
+    PoseLandmarkType.rightShoulder
+  ];
+  
   static const List<PoseLandmarkType> squatKeypoints = [
     PoseLandmarkType.leftKnee, 
     PoseLandmarkType.rightKnee,
@@ -30,9 +39,50 @@ class PoseUtils {
     return true;
   }
 
+  /// Menghitung sudut antara tiga titik
+  static double calculateAngle(PoseLandmark a, PoseLandmark b, PoseLandmark c) {
+    double radians = math.atan2(c.y - b.y, c.x - b.x) -
+        math.atan2(a.y - b.y, a.x - b.x);
+    double angle = (radians * 180.0 / math.pi);
+    if (angle < 0) {
+      angle = -angle;
+    }
+    if (angle > 180.0) {
+      angle = 360 - angle;
+    }
+    return angle;
+  }
+
   /// Menganalisis pose dan mengembalikan daftar status
   static List<String> analyzePose(Pose pose, Size imageSize) {
     List<String> statusList = [];
+    
+    // Analyze elbow angles
+    if (hasKeypoints(pose, elbowKeypoints)) {
+      final leftWrist = pose.landmarks[PoseLandmarkType.leftWrist]!;
+      final rightWrist = pose.landmarks[PoseLandmarkType.rightWrist]!;
+      final leftElbow = pose.landmarks[PoseLandmarkType.leftElbow]!;
+      final rightElbow = pose.landmarks[PoseLandmarkType.rightElbow]!;
+      final leftShoulder = pose.landmarks[PoseLandmarkType.leftShoulder]!;
+      final rightShoulder = pose.landmarks[PoseLandmarkType.rightShoulder]!;
+
+      double leftElbowAngle = calculateAngle(leftWrist, leftElbow, leftShoulder);
+      double rightElbowAngle = calculateAngle(rightWrist, rightElbow, rightShoulder);
+
+      // Siku dianggap ditekuk jika sudutnya kurang dari 120 derajat
+      bool leftElbowBent = leftElbowAngle < 120;
+      bool rightElbowBent = rightElbowAngle < 120;
+
+      if (leftElbowBent && rightElbowBent) {
+        statusList.add('Siku: Kedua siku ditekuk');
+      } else if (leftElbowBent) {
+        statusList.add('Siku: Siku kiri ditekuk');
+      } else if (rightElbowBent) {
+        statusList.add('Siku: Siku kanan ditekuk');
+      } else {
+        statusList.add('Siku: Kedua siku lurus');
+      }
+    }
     
     // Analyze hand positions
     if (hasKeypoints(pose, handKeypoints)) {
