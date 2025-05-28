@@ -17,8 +17,8 @@ class PoseDetectorView extends StatefulWidget {
 }
 
 class _PoseDetectorViewState extends State<PoseDetectorView> {
-  late CameraController _cameraController;
-  late Future<void> _initializeControllerFuture;
+  CameraController? _cameraController;
+  Future<void>? _initializeControllerFuture;
   PoseDetector? _poseDetector;
   bool _canProcess = false;
   bool _isBusy = false;
@@ -34,8 +34,7 @@ class _PoseDetectorViewState extends State<PoseDetectorView> {
   @override
   void initState() {
     super.initState();
-    _requestCameraPermission();
-    _initializeCameras();
+    _initializeCamera();
     _initializePoseDetector();
   }
 
@@ -46,30 +45,38 @@ class _PoseDetectorViewState extends State<PoseDetectorView> {
     }
   }
   
-  Future<void> _initializeCameras() async {
-    cameras = await availableCameras();
-    _initializeCamera();
-  }
+  Future<void> _initializeCamera() async {
+    await _requestCameraPermission();
+    
+    try {
+      cameras = await availableCameras();
+      if (cameras == null || cameras!.isEmpty) {
+        debugPrint('No cameras available');
+        return;
+      }
 
-  void _initializeCamera() {
-    _cameraController = CameraController(
-      cameras![_cameraIndex],
-      ResolutionPreset.medium,
-      enableAudio: false,
-    );
-    _initializeControllerFuture = _cameraController.initialize().then((_) {
-      if (!mounted) return;
-      _cameraController.startImageStream(_processCameraImage);
-      setState(() {});
-    });
+      _cameraController = CameraController(
+        cameras![_cameraIndex],
+        ResolutionPreset.medium,
+        enableAudio: false,
+      );
+
+      _initializeControllerFuture = _cameraController!.initialize().then((_) {
+        if (!mounted) return;
+        _cameraController!.startImageStream(_processCameraImage);
+        setState(() {});
+      });
+    } catch (e) {
+      debugPrint('Error initializing camera: $e');
+    }
   }
   
   Future<void> _switchCamera() async {
     if (cameras == null || cameras!.isEmpty) return;
     
     _cameraIndex = (_cameraIndex + 1) % cameras!.length;
-    await _cameraController.stopImageStream();
-    await _cameraController.dispose();
+    await _cameraController?.stopImageStream();
+    await _cameraController?.dispose();
     
     setState(() {
       _text = null;
@@ -88,7 +95,7 @@ class _PoseDetectorViewState extends State<PoseDetectorView> {
   }
 
   Future<void> _processCameraImage(CameraImage image) async {
-    if (!_canProcess || _isBusy) return;
+    if (!_canProcess || _isBusy || _cameraController == null) return;
     _isBusy = true;
 
     final InputImage inputImage;
@@ -180,13 +187,34 @@ class _PoseDetectorViewState extends State<PoseDetectorView> {
   void dispose() {
     _canProcess = false;
     _poseDetector?.close();
-    _cameraController.stopImageStream();
-    _cameraController.dispose();
+    _cameraController?.stopImageStream();
+    _cameraController?.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_cameraController == null || !_cameraController!.value.isInitialized) {
+      return const Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text(
+                'Menginisialisasi kamera...',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('MediaPipe Pose Detector'),
@@ -199,104 +227,81 @@ class _PoseDetectorViewState extends State<PoseDetectorView> {
           ),
         ],
       ),
-      body: FutureBuilder<void>(
-        future: _initializeControllerFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.done) {
-            return Stack(
-              fit: StackFit.expand,
-              children: <Widget>[
-                CameraPreview(_cameraController),
-                Container(
-                  color: Colors.black.withOpacity(0.1),
-                ),
-                if (_text != null)
-                  Align(
-                    alignment: Alignment.bottomCenter,
-                    child: Padding(
-                      padding: const EdgeInsets.only(bottom: 30, left: 20, right: 20),
-                      child: Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.7),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.blue, width: 2),
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: _text!.split('\n').map((line) {
-                            final parts = line.split(': ');
-                            if (parts.length == 2) {
-                              final label = parts[0];
-                              final value = parts[1];
-                              Color valueColor = Colors.white;
-                              
-                              if (value.contains('normal') || value == 'Berdiri') {
-                                valueColor = Colors.green;
-                              } else {
-                                valueColor = Colors.orange;
-                              }
-                              
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: 6),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      label,
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    Text(
-                                      value,
-                                      style: TextStyle(
-                                        color: valueColor,
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            } else {
-                              return Text(
-                                line,
+      body: Stack(
+        fit: StackFit.expand,
+        children: <Widget>[
+          CameraPreview(_cameraController!),
+          // Container(
+          //   color: Colors.red,
+          //   // color: Colors.black.withOpacity(0.1),
+          // ),
+          if (_text != null)
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 30, left: 20, right: 20),
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.7),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.blue, width: 2),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: _text!.split('\n').map((line) {
+                      final parts = line.split(': ');
+                      if (parts.length == 2) {
+                        final label = parts[0];
+                        final value = parts[1];
+                        Color valueColor = Colors.white;
+                        
+                        if (value.contains('normal') || value == 'Berdiri') {
+                          valueColor = Colors.green;
+                        } else {
+                          valueColor = Colors.orange;
+                        }
+                        
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 6),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                label,
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 16,
+                                  fontWeight: FontWeight.bold,
                                 ),
-                              );
-                            }
-                          }).toList(),
-                        ),
-                      ),
-                    ),
+                              ),
+                              Text(
+                                value,
+                                style: TextStyle(
+                                  color: valueColor,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      } else {
+                        return Text(
+                          line,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                          ),
+                        );
+                      }
+                    }).toList(),
                   ),
-              ],
-            );
-          } else {
-            return const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text(
-                    'Menginisialisasi kamera...',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
+                ),
               ),
-            );
-          }
-        },
+            ),
+        ],
       ),
     );
   }
