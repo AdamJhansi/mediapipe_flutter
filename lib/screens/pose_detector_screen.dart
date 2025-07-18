@@ -10,7 +10,7 @@ import '../utils/pose_utils.dart';
 class PoseDetectorView extends StatefulWidget {
   final CameraDescription camera;
 
-  const PoseDetectorView({super.key, required this.camera});
+  const PoseDetectorView({super.key, required this.camera,});
 
   @override
   State<PoseDetectorView> createState() => _PoseDetectorViewState();

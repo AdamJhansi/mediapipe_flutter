@@ -4,7 +4,7 @@ import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
 
 /// Kelas untuk utilitas terkait pose detection
 class PoseUtils {
-  // Static list of required keypoints for different analyses
+  // List keypoints yang dibutuhkan pertiap anggota tubuh
   static const List<PoseLandmarkType> handKeypoints = [
     PoseLandmarkType.leftWrist, 
     PoseLandmarkType.rightWrist,
@@ -21,13 +21,18 @@ class PoseUtils {
     PoseLandmarkType.rightShoulder
   ];
   
-  static const List<PoseLandmarkType> squatKeypoints = [
+  static const List<PoseLandmarkType> bodyKeypoints = [
     PoseLandmarkType.leftKnee, 
     PoseLandmarkType.rightKnee,
     PoseLandmarkType.leftHip,
     PoseLandmarkType.rightHip
   ];
-  
+
+  static const List<PoseLandmarkType> headTiltKeypoints = [
+    PoseLandmarkType.leftEar,
+    PoseLandmarkType.rightEar,
+  ];
+
   /// Memeriksa apakah semua keypoint yang diperlukan tersedia
   static bool hasKeypoints(Pose pose, List<PoseLandmarkType> types) {
     for (final type in types) {
@@ -56,7 +61,23 @@ class PoseUtils {
   /// Menganalisis pose dan mengembalikan daftar status
   static List<String> analyzePose(Pose pose, Size imageSize) {
     List<String> statusList = [];
-    
+
+    // Analyze head tilt
+    if (hasKeypoints(pose, headTiltKeypoints)) {
+      final leftEar = pose.landmarks[PoseLandmarkType.leftEar]!;
+      final rightEar = pose.landmarks[PoseLandmarkType.rightEar]!;
+
+      double earDiff = leftEar.y - rightEar.y;
+
+      if (earDiff > 15) {
+        statusList.add('Kepala: Miring ke kiri');
+      } else if (earDiff < -15) {
+        statusList.add('Kepala: Miring ke kanan');
+      } else {
+        statusList.add('Kepala: Posisi normal');
+      }
+    }
+
     // Analyze elbow angles
     if (hasKeypoints(pose, elbowKeypoints)) {
       final leftWrist = pose.landmarks[PoseLandmarkType.leftWrist]!;
@@ -105,8 +126,8 @@ class PoseUtils {
       }
     }
     
-    // Analyze squat position
-    if (hasKeypoints(pose, squatKeypoints)) {
+    // Analyze body position
+    if (hasKeypoints(pose, bodyKeypoints)) {
       final leftKnee = pose.landmarks[PoseLandmarkType.leftKnee]!;
       final rightKnee = pose.landmarks[PoseLandmarkType.rightKnee]!;
       final leftHip = pose.landmarks[PoseLandmarkType.leftHip]!;
@@ -120,7 +141,8 @@ class PoseUtils {
       if (avgRatio > 0.15) { // Adjusted threshold for better accuracy
         statusList.add('Posisi: Berdiri');
       } else {
-        statusList.add('Posisi: Jongkok');
+        // statusList.add('Posisi: Jongkok');
+        statusList.add('');
       }
     }
     
