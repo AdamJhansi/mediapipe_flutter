@@ -29,7 +29,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.black),
         useMaterial3: true,
       ),
-      home: SplashScreen(nextScreen: PoseDetectorView(camera: camera)),
+      home: SplashScreen(),
     );
   }
 }
