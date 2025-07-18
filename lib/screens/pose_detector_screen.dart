@@ -57,7 +57,7 @@ class _PoseDetectorViewState extends State<PoseDetectorView> {
 
       _cameraController = CameraController(
         cameras![_cameraIndex],
-        ResolutionPreset.medium,
+        ResolutionPreset.high,
         enableAudio: false,
       );
 
@@ -196,6 +196,7 @@ class _PoseDetectorViewState extends State<PoseDetectorView> {
   Widget build(BuildContext context) {
     if (_cameraController == null || !_cameraController!.value.isInitialized) {
       return const Scaffold(
+        backgroundColor: Colors.white,
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -219,17 +220,29 @@ class _PoseDetectorViewState extends State<PoseDetectorView> {
       appBar: AppBar(
         backgroundColor: Colors.black,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.flip_camera_ios),
-            onPressed: _switchCamera,
-            tooltip: 'Ganti kamera',
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8.0,horizontal: 16.0),
+            child: IconButton(
+              icon: const Icon(Icons.flip_camera_ios),
+              iconSize: 40,
+              onPressed: _switchCamera,
+              tooltip: 'Ganti kamera',
+            ),
           ),
         ],
       ),
+      backgroundColor: Colors.black,
       body: Stack(
         fit: StackFit.expand,
         children: <Widget>[
-          CameraPreview(_cameraController!),
+          Align(
+            alignment: Alignment.center,
+            child: AspectRatio(
+              aspectRatio: 9 / 16,
+              child: CameraPreview(_cameraController!),
+            ),
+          ),
+          // CameraPreview(_cameraController!),
           // Container(
           //   color: Colors.red,
           //   // color: Colors.black.withOpacity(0.1),
@@ -238,7 +251,7 @@ class _PoseDetectorViewState extends State<PoseDetectorView> {
             Align(
               alignment: Alignment.bottomCenter,
               child: Padding(
-                padding: const EdgeInsets.only(bottom: 30, left: 20, right: 20),
+                padding: const EdgeInsets.only(bottom: 60, left: 20, right: 20),
                 child: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
