@@ -217,8 +217,7 @@ class _PoseDetectorViewState extends State<PoseDetectorView> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('MediaPipe Pose Detector'),
-        backgroundColor: Colors.blue,
+        backgroundColor: Colors.black,
         actions: [
           IconButton(
             icon: const Icon(Icons.flip_camera_ios),
