@@ -31,19 +31,19 @@ Dibangun menggunakan **Flutter**, memanfaatkan **MediaPipe** untuk deteksi pose,
 
 1. **Clone repository**
    ```bash
-   git clone https://github.com/username/nama-repo.git
-   cd nama-repo
+   git clone https://github.com/AdamJhansi/mediapipe_flutter.git
+   cd mediapipe_flutter
    ```
    
 2. **Install dependencies**
-```bash
-flutter pub get
-```
+    ```bash
+    flutter pub get
+    ```
 
 3. **Jalankan aplikasi**
-```bash
-flutter run
-```
+    ```bash
+    flutter run
+    ```
 
 ## 🧑‍💻 Kontribusi
 Kontribusi sangat terbuka!
